@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Utama Ujian Online - Sistem Informasi UNDIKSHA</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 650px;
+        }
+
+        .header {
+            border-bottom: 3px solid #0284c7;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .header h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 18px;
+            border: none;
+        }
+
+        .instruction-box {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffb300;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            font-size: 13px;
+            color: #b78103;
+        }
+
+        .soal-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+
+        .soal-text {
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 10px;
+        }
+
+        .options label {
+            display: block;
+            margin: 8px 0;
+            cursor: pointer;
+            color: #475569;
+        }
+
+        .btn-submit {
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn-submit:hover {
+            background-color: #0369a1;
+        }
+
+        #alert-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(225, 29, 72, 0.95);
+            color: white;
+            z-index: 9999;
+            text-align: center;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: sans-serif;
+        }
+
+        #alert-overlay h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        #alert-overlay p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container" id="exam-portal">
+        <div class="header">
+            <h2>UJIAN TENGAH SEMESTER - KEAMANAN SISTEM INFORMASI</h2>
+            <small style="color: #64748b;">Sistem Pemantauan Terintegrasi Agen HIDS Klien</small>
+        </div>
+
+        <div class="instruction-box">
+            <strong>PERINGATAN INTEGRITAS SILABUS TRI HITA KARANA:</strong><br>
+            Setiap aktivitas perpindahan jendela (tab-switching), minimalisasi browser, atau penyalinan teks luar
+            (copy-paste) akan terdeteksi sebagai anomali dan dicatat dalam log forensik server lokal secara real-time.
+        </div>
+
+        <div class="soal-item">
+            <div class="soal-text">1. Manakah di bawah ini yang merupakan karakteristik utama pendekatan Anomaly-Based
+                Detection pada IDS?</div>
+            <div class="options">
+                <label><input type="radio" name="q1" value="a"> a. Menggunakan database tanda tangan serangan yang
+                    kaku.</label>
+                <label><input type="radio" name="q1" value="b"> b. Membandingkan perilaku sistem saat ini dengan
+                    parameter baseline normal.</label>
+                <label><input type="radio" name="q1" value="c"> c. Memutus koneksi internet penyerang secara
+                    otomatis.</label>
+                <label><input type="radio" name="q1" value="d"> d. Menghapus file malware secara permanen dari disk
+                    lokal.</label>
+            </div>
+        </div>
+
+        <button class="btn-submit" onclick="finishExam()">Kirim Jawaban Ujian</button>
+    </div>
+
+    <div id="alert-overlay">
+        <h1>🚨 INDIKASI ANOMALI TERDETEKSI 🚨</h1>
+        <p id="error-desc">Sistem mendeteksi hilangnya fokus antarmuka aplikasi ujian.</p>
+        <span style="font-size: 13px; color: #fecdd3;">Catatan pelanggaran telah diperbarui pada repositori log
+            hids_exam_log.json</span><br><br>
+        <button
+            style="padding: 10px 20px; background: white; color: #e11d48; border: none; font-weight: bold; border-radius: 4px; cursor: pointer;"
+            onclick="resetSimulation()">Kembali ke Ujian (Mode Simulasi)</button>
+    </div>
+
+    <script>
+        let violationTriggered = false;
+
+        function logViolation(type) {
+            if (violationTriggered) return;
+            violationTriggered = true;
+
+            document.getElementById('exam-portal').style.display = 'none';
+            const overlay = document.getElementById('alert-overlay');
+            overlay.style.display = 'flex';
+            document.getElementById('error-desc').innerText = "Pelanggaran: " + type;
+
+            console.warn(`[HIDS_ALERT] Anomali terdeteksi: ${type} pada ` + new Date().toISOString());
+        }
+
+        // Sensor 1: Deteksi perpindahan tab atau perkecilan browser (Visibility API)
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                logViolation("Meninggalkan tab aplikasi ujian (Tab-Switching / Minimize).");
+            }
+        });
+
+        // Sensor 2: Deteksi perpindahan fokus ke aplikasi pihak ketiga (Window Blur)
+        window.addEventListener('blur', function () {
+            logViolation("Kehilangan fokus layar browser utama (Aplikasi Luar Aktif).");
+        });
+
+        function resetSimulation() {
+            violationTriggered = false;
+            document.getElementById('alert-overlay').style.display = 'none';
+            document.getElementById('exam-portal').style.display = 'block';
+        }
+
+        function finishExam() {
+            alert("Jawaban berhasil dikirim dengan aman ke sistem akademik.");
+        }
+    </script>
+</body>
+
+</html>
